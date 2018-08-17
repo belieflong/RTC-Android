@@ -1,0 +1,1 @@
+include ':app', ':libjingle_sdk_android', ':rtcbase_java'
