@@ -14,10 +14,7 @@ import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
-
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -33,15 +30,6 @@ class MediaCodecUtils {
   static final String INTEL_PREFIX = "OMX.Intel.";
   static final String NVIDIA_PREFIX = "OMX.Nvidia.";
   static final String QCOM_PREFIX = "OMX.qcom.";
-  static final String MTK_PREFIX = "OMX.MTK.";
-  static final String GOOGLE_PREFIX = "OMX.google.";
-  static final String AMLOGIC_PREFIX = "OMX.amlogic.";
-  static final String HISI_PREFIX = "OMX.hisi.";
-  static final String MS_PREFIX = "OMX.MS.";
-
-  // 使用硬解码时，不使用EGL SurfaceTexture 渲染的的设备型号(会出现绿屏情况 已测试解码H264)
-  static final List<String> HW_EGL_TEXTURE_EXCEPTION_MODELS =
-          Arrays.asList("GN5001");
 
   // NV12 color format supported by QCOM codec, but not declared in MediaCodec -
   // see /hardware/qcom/media/mm-core/inc/OMX_QCOMExtns.h

@@ -14,11 +14,6 @@ import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX;
 import static org.webrtc.MediaCodecUtils.INTEL_PREFIX;
 import static org.webrtc.MediaCodecUtils.NVIDIA_PREFIX;
 import static org.webrtc.MediaCodecUtils.QCOM_PREFIX;
-import static org.webrtc.MediaCodecUtils.MTK_PREFIX;
-import static org.webrtc.MediaCodecUtils.GOOGLE_PREFIX;
-import static org.webrtc.MediaCodecUtils.AMLOGIC_PREFIX;
-import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
-import static org.webrtc.MediaCodecUtils.MS_PREFIX;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -46,7 +41,7 @@ public class HardwareVideoDecoderFactory implements VideoDecoderFactory {
    * shared context.  The context may be null.  If it is null, then surface support is disabled.
    */
   public HardwareVideoDecoderFactory(EglBase.Context sharedContext) {
-    this.sharedContext = MediaCodecUtils.HW_EGL_TEXTURE_EXCEPTION_MODELS.contains(Build.MODEL) ? null : sharedContext;
+    this.sharedContext = sharedContext;
   }
 
   @Nullable
@@ -60,7 +55,7 @@ public class HardwareVideoDecoderFactory implements VideoDecoderFactory {
     }
 
     CodecCapabilities capabilities = info.getCapabilitiesForType(type.mimeType());
-    return new HardwareVideoDecoder(info.getName(), type,
+    return new HardwareVideoDecoder(new MediaCodecWrapperFactoryImpl(), info.getName(), type,
         MediaCodecUtils.selectColorFormat(MediaCodecUtils.DECODER_COLOR_FORMATS, capabilities),
         sharedContext);
   }
@@ -71,8 +66,7 @@ public class HardwareVideoDecoderFactory implements VideoDecoderFactory {
     // Generate a list of supported codecs in order of preference:
     // VP8, VP9, H264 (high profile), and H264 (baseline profile).
     for (VideoCodecType type :
-        //Priority H264
-        new VideoCodecType[] {VideoCodecType.H264, VideoCodecType.VP8, VideoCodecType.VP9}) {
+        new VideoCodecType[] {VideoCodecType.VP8, VideoCodecType.VP9, VideoCodecType.H264}) {
       MediaCodecInfo codec = findCodecForType(type);
       if (codec != null) {
         String name = type.name();
@@ -134,26 +128,14 @@ public class HardwareVideoDecoderFactory implements VideoDecoderFactory {
       case VP8:
         // QCOM, Intel, Exynos, and Nvidia all supported for VP8.
         return name.startsWith(QCOM_PREFIX) || name.startsWith(INTEL_PREFIX)
-                || name.startsWith(EXYNOS_PREFIX) || name.startsWith(NVIDIA_PREFIX)
-                || name.startsWith(MTK_PREFIX)
-                || name.startsWith(GOOGLE_PREFIX)
-                || name.startsWith(AMLOGIC_PREFIX)
-                || name.startsWith(HISI_PREFIX)
-                || name.startsWith(MS_PREFIX)
-                ;
+            || name.startsWith(EXYNOS_PREFIX) || name.startsWith(NVIDIA_PREFIX);
       case VP9:
         // QCOM and Exynos supported for VP9.
         return name.startsWith(QCOM_PREFIX) || name.startsWith(EXYNOS_PREFIX);
       case H264:
         // QCOM, Intel, and Exynos supported for H264.
         return name.startsWith(QCOM_PREFIX) || name.startsWith(INTEL_PREFIX)
-                || name.startsWith(EXYNOS_PREFIX)
-                || name.startsWith(MTK_PREFIX)
-                || name.startsWith(GOOGLE_PREFIX)
-                || name.startsWith(AMLOGIC_PREFIX)
-                || name.startsWith(HISI_PREFIX)
-                || name.startsWith(MS_PREFIX)
-                ;
+            || name.startsWith(EXYNOS_PREFIX);
       default:
         return false;
     }

@@ -13,11 +13,6 @@ package org.webrtc;
 import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX;
 import static org.webrtc.MediaCodecUtils.INTEL_PREFIX;
 import static org.webrtc.MediaCodecUtils.QCOM_PREFIX;
-import static org.webrtc.MediaCodecUtils.MTK_PREFIX;
-import static org.webrtc.MediaCodecUtils.GOOGLE_PREFIX;
-import static org.webrtc.MediaCodecUtils.AMLOGIC_PREFIX;
-import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
-import static org.webrtc.MediaCodecUtils.MS_PREFIX;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -69,8 +64,6 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   @Nullable
   @Override
   public VideoEncoder createEncoder(VideoCodecInfo input) {
-    Logger.e("go into createEncoder start");
-
     VideoCodecType type = VideoCodecType.valueOf(input.name);
     MediaCodecInfo info = findCodecForType(type);
 
@@ -99,21 +92,19 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
       }
     }
 
-    return new HardwareVideoEncoder(codecName, type, surfaceColorFormat, yuvColorFormat,
-        input.params, getKeyFrameIntervalSec(type), getForcedKeyFrameIntervalMs(type, codecName),
-        createBitrateAdjuster(type, codecName), sharedContext);
+    return new HardwareVideoEncoder(new MediaCodecWrapperFactoryImpl(), codecName, type,
+        surfaceColorFormat, yuvColorFormat, input.params, getKeyFrameIntervalSec(type),
+        getForcedKeyFrameIntervalMs(type, codecName), createBitrateAdjuster(type, codecName),
+        sharedContext);
   }
 
   @Override
   public VideoCodecInfo[] getSupportedCodecs() {
-    Logger.e(" go into getSupportedCodecs start");
-
     List<VideoCodecInfo> supportedCodecInfos = new ArrayList<VideoCodecInfo>();
     // Generate a list of supported codecs in order of preference:
     // VP8, VP9, H264 (high profile), and H264 (baseline profile).
     for (VideoCodecType type :
-        //Priority H264
-        new VideoCodecType[] { VideoCodecType.H264,  VideoCodecType.VP8, VideoCodecType.VP9}) {
+        new VideoCodecType[] {VideoCodecType.VP8, VideoCodecType.VP9, VideoCodecType.H264}) {
       MediaCodecInfo codec = findCodecForType(type);
       if (codec != null) {
         String name = type.name();
@@ -186,16 +177,6 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
     return (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
         // Exynos VP8 encoder is supported in M or later.
         || (name.startsWith(EXYNOS_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        // MTK VP8 encoder is supported in in LOLLIPOP or later
-        || (name.startsWith(MTK_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        // GOOGLE VP8 encoder is supported in in LOLLIPOP or later
-        || (name.startsWith(GOOGLE_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        // AMLOGIC VP8 encoder is supported in in LOLLIPOP or later
-        || (name.startsWith(AMLOGIC_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-        // HISI VP8 encoder is supported in in LOLLIPOP or later
-        || (name.startsWith(HISI_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-        // MS VP8 encoder is supported in in LOLLIPOP or later
-        || (name.startsWith(MS_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
         // Intel Vp8 encoder is supported in LOLLIPOP or later, with the intel encoder enabled.
         || (name.startsWith(INTEL_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
                && enableIntelVp8Encoder);
@@ -215,29 +196,10 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
     }
     String name = info.getName();
     // QCOM H264 encoder is supported in KITKAT or later.
-    boolean isHardwareSupported = (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-            // Exynos H264 encoder is supported in LOLLIPOP or later.
-            || (name.startsWith(EXYNOS_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            // MTK H264 encoder si supported in LOLLIPOP or later
-            || (name.startsWith(MTK_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            // GOOGLE H264 encoder si supported in LOLLIPOP or later
-            || (name.startsWith(GOOGLE_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            // AMLOGIC H264 encoder si supported in LOLLIPOP or later
-            || (name.startsWith(AMLOGIC_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-            // HISI H264 encoder si supported in LOLLIPOP or later
-            || (name.startsWith(HISI_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-            // MS H264 encoder si supported in LOLLIPOP or later
-            || (name.startsWith(MS_PREFIX)
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-            ;
-
-    Logger.e(" isHardwareSupportedInCurrentSdkH264 = " + isHardwareSupported + " - " + name);
-    return isHardwareSupported;
+    return (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+        // Exynos H264 encoder is supported in LOLLIPOP or later.
+        || (name.startsWith(EXYNOS_PREFIX)
+               && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP);
   }
 
   private int getKeyFrameIntervalSec(VideoCodecType type) {
