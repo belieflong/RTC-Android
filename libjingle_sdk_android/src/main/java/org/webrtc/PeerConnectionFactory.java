@@ -134,7 +134,6 @@ public class PeerConnectionFactory {
     public boolean disableEncryption;
     public boolean disableNetworkMonitor;
     public boolean enableAes128Sha1_32CryptoCipher;
-    public boolean enableGcmCryptoSuites;
 
     @CalledByNative("Options")
     int getNetworkIgnoreMask() {
@@ -154,11 +153,6 @@ public class PeerConnectionFactory {
     @CalledByNative("Options")
     boolean getEnableAes128Sha1_32CryptoCipher() {
       return enableAes128Sha1_32CryptoCipher;
-    }
-
-    @CalledByNative("Options")
-    boolean getEnableGcmCryptoSuites() {
-      return enableGcmCryptoSuites;
     }
   }
 
@@ -329,25 +323,6 @@ public class PeerConnectionFactory {
   }
 
   /**
-   * Internal helper function to pass the parameters down into the native JNI bridge.
-   */
-  @Nullable
-  PeerConnection createPeerConnectionInternal(PeerConnection.RTCConfiguration rtcConfig,
-      MediaConstraints constraints, PeerConnection.Observer observer,
-      SSLCertificateVerifier sslCertificateVerifier) {
-    long nativeObserver = PeerConnection.createNativePeerConnectionObserver(observer);
-    if (nativeObserver == 0) {
-      return null;
-    }
-    long nativePeerConnection = nativeCreatePeerConnection(
-        nativeFactory, rtcConfig, constraints, nativeObserver, sslCertificateVerifier);
-    if (nativePeerConnection == 0) {
-      return null;
-    }
-    return new PeerConnection(nativePeerConnection);
-  }
-
-  /**
    * Deprecated. PeerConnection constraints are deprecated. Supply values in rtcConfig struct
    * instead and use the method without constraints in the signature.
    */
@@ -355,8 +330,16 @@ public class PeerConnectionFactory {
   @Deprecated
   public PeerConnection createPeerConnection(PeerConnection.RTCConfiguration rtcConfig,
       MediaConstraints constraints, PeerConnection.Observer observer) {
-    return createPeerConnectionInternal(
-        rtcConfig, constraints, observer, /* sslCertificateVerifier= */ null);
+    long nativeObserver = PeerConnection.createNativePeerConnectionObserver(observer);
+    if (nativeObserver == 0) {
+      return null;
+    }
+    long nativePeerConnection =
+        nativeCreatePeerConnection(nativeFactory, rtcConfig, constraints, nativeObserver);
+    if (nativePeerConnection == 0) {
+      return null;
+    }
+    return new PeerConnection(nativePeerConnection);
   }
 
   /**
@@ -387,8 +370,7 @@ public class PeerConnectionFactory {
   @Nullable
   public PeerConnection createPeerConnection(
       PeerConnection.RTCConfiguration rtcConfig, PeerConnectionDependencies dependencies) {
-    return createPeerConnectionInternal(rtcConfig, null /* constraints */,
-        dependencies.getObserver(), dependencies.getSSLCertificateVerifier());
+    return createPeerConnection(rtcConfig, null /* constraints */, dependencies.getObserver());
   }
 
   public MediaStream createLocalMediaStream(String label) {
@@ -397,6 +379,17 @@ public class PeerConnectionFactory {
 
   public VideoSource createVideoSource(boolean isScreencast) {
     return new VideoSource(nativeCreateVideoSource(nativeFactory, isScreencast));
+  }
+
+  @Deprecated
+  public VideoSource createVideoSource(VideoCapturer capturer) {
+    final SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create(
+        VIDEO_CAPTURER_THREAD_NAME, MediaCodecVideoEncoder.getEglContext());
+    final VideoSource videoSource = new VideoSource(
+        nativeCreateVideoSource(nativeFactory, capturer.isScreencast()), surfaceTextureHelper);
+    capturer.initialize(surfaceTextureHelper, ContextUtils.getApplicationContext(),
+        videoSource.getCapturerObserver());
+    return videoSource;
   }
 
   public VideoTrack createVideoTrack(String id, VideoSource source) {
@@ -515,8 +508,7 @@ public class PeerConnectionFactory {
       VideoDecoderFactory decoderFactory, long nativeAudioProcessor,
       long nativeFecControllerFactory);
   private static native long nativeCreatePeerConnection(long factory,
-      PeerConnection.RTCConfiguration rtcConfig, MediaConstraints constraints, long nativeObserver,
-      SSLCertificateVerifier sslCertificateVerifier);
+      PeerConnection.RTCConfiguration rtcConfig, MediaConstraints constraints, long nativeObserver);
   private static native long nativeCreateLocalMediaStream(long factory, String label);
   private static native long nativeCreateVideoSource(long factory, boolean is_screencast);
   private static native long nativeCreateVideoTrack(

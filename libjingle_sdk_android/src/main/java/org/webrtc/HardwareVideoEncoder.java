@@ -53,7 +53,6 @@ class HardwareVideoEncoder implements VideoEncoder {
   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
 
   // --- Initialized on construction.
-  private final MediaCodecWrapperFactory mediaCodecWrapperFactory;
   private final String codecName;
   private final VideoCodecType codecType;
   private final Integer surfaceColorFormat;
@@ -83,7 +82,7 @@ class HardwareVideoEncoder implements VideoEncoder {
   private boolean automaticResizeOn;
 
   // --- Valid and immutable while an encoding session is running.
-  @Nullable private MediaCodecWrapper codec;
+  @Nullable private MediaCodec codec;
   // Thread that delivers encoded frames to the user callback.
   @Nullable private Thread outputThread;
 
@@ -129,11 +128,10 @@ class HardwareVideoEncoder implements VideoEncoder {
    *     desired bitrates
    * @throws IllegalArgumentException if colorFormat is unsupported
    */
-  public HardwareVideoEncoder(MediaCodecWrapperFactory mediaCodecWrapperFactory, String codecName,
-      VideoCodecType codecType, Integer surfaceColorFormat, Integer yuvColorFormat,
-      Map<String, String> params, int keyFrameIntervalSec, int forceKeyFrameIntervalMs,
-      BitrateAdjuster bitrateAdjuster, EglBase14.Context sharedContext) {
-    this.mediaCodecWrapperFactory = mediaCodecWrapperFactory;
+  public HardwareVideoEncoder(String codecName, VideoCodecType codecType,
+      Integer surfaceColorFormat, Integer yuvColorFormat, Map<String, String> params,
+      int keyFrameIntervalSec, int forceKeyFrameIntervalMs, BitrateAdjuster bitrateAdjuster,
+      EglBase14.Context sharedContext) {
     this.codecName = codecName;
     this.codecType = codecType;
     this.surfaceColorFormat = surfaceColorFormat;
@@ -176,7 +174,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     lastKeyFrameNs = -1;
 
     try {
-      codec = mediaCodecWrapperFactory.createByCodecName(codecName);
+      codec = MediaCodec.createByCodecName(codecName);
     } catch (IOException | IllegalArgumentException e) {
       Logging.e(TAG, "Cannot create media encoder " + codecName);
       return VideoCodecStatus.FALLBACK_SOFTWARE;
@@ -386,7 +384,7 @@ class HardwareVideoEncoder implements VideoEncoder {
       Logging.e(TAG, "getInputBuffers failed", e);
       return VideoCodecStatus.ERROR;
     }
-    fillInputBuffer(buffer, videoFrameBuffer);
+    yuvFormat.fillBuffer(buffer, videoFrameBuffer);
 
     try {
       codec.queueInputBuffer(
@@ -483,8 +481,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     };
   }
 
-  // Visible for testing.
-  protected void deliverEncodedImage() {
+  private void deliverEncodedImage() {
     outputThreadChecker.checkIsOnValidThread();
     try {
       MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -577,11 +574,6 @@ class HardwareVideoEncoder implements VideoEncoder {
 
   private boolean canUseSurface() {
     return sharedContext != null && surfaceColorFormat != null;
-  }
-
-  // Visible for testing.
-  protected void fillInputBuffer(ByteBuffer buffer, VideoFrame.Buffer videoFrameBuffer) {
-    yuvFormat.fillBuffer(buffer, videoFrameBuffer);
   }
 
   /**

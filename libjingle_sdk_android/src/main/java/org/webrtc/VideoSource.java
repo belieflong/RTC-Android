@@ -23,6 +23,13 @@ public class VideoSource extends MediaSource {
     this.capturerObserver = new NativeCapturerObserver(nativeGetInternalSource(nativeSource));
   }
 
+  // TODO(bugs.webrtc.org/9181): Remove.
+  VideoSource(long nativeSource, SurfaceTextureHelper surfaceTextureHelper) {
+    super(nativeSource);
+    this.capturerObserver =
+        new NativeCapturerObserver(nativeGetInternalSource(nativeSource), surfaceTextureHelper);
+  }
+
   /**
    * Calling this function will cause frames to be scaled down to the requested resolution. Also,
    * frames will be cropped to match the requested aspect ratio, and frames will be dropped to match
@@ -35,6 +42,12 @@ public class VideoSource extends MediaSource {
 
   public CapturerObserver getCapturerObserver() {
     return capturerObserver;
+  }
+
+  @Override
+  public void dispose() {
+    capturerObserver.dispose();
+    super.dispose();
   }
 
   // Returns source->internal() from webrtc::VideoTrackSourceProxy.

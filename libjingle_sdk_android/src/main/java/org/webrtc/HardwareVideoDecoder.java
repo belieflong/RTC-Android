@@ -52,7 +52,6 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
   // MediaCodec.
   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
 
-  private final MediaCodecWrapperFactory mediaCodecWrapperFactory;
   private final String codecName;
   private final VideoCodecType codecType;
 
@@ -124,14 +123,13 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
   @Nullable private Callback callback;
 
   // Valid and immutable while the decoder is running.
-  @Nullable private MediaCodecWrapper codec = null;
+  @Nullable private MediaCodec codec = null;
 
-  HardwareVideoDecoder(MediaCodecWrapperFactory mediaCodecWrapperFactory, String codecName,
-      VideoCodecType codecType, int colorFormat, EglBase.Context sharedContext) {
+  HardwareVideoDecoder(
+      String codecName, VideoCodecType codecType, int colorFormat, EglBase.Context sharedContext) {
     if (!isSupportedColorFormat(colorFormat)) {
       throw new IllegalArgumentException("Unsupported color format: " + colorFormat);
     }
-    this.mediaCodecWrapperFactory = mediaCodecWrapperFactory;
     this.codecName = codecName;
     this.codecType = codecType;
     this.colorFormat = colorFormat;
@@ -145,7 +143,7 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
 
     this.callback = callback;
     if (sharedContext != null) {
-      surfaceTextureHelper = createSurfaceTextureHelper();
+      surfaceTextureHelper = SurfaceTextureHelper.create("decoder-texture-thread", sharedContext);
       surface = new Surface(surfaceTextureHelper.getSurfaceTexture());
       surfaceTextureHelper.startListening(this);
     }
@@ -172,7 +170,7 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
     keyFrameRequired = true;
 
     try {
-      codec = mediaCodecWrapperFactory.createByCodecName(codecName);
+      codec = MediaCodec.createByCodecName(codecName);
     } catch (IOException | IllegalArgumentException e) {
       Logging.e(TAG, "Cannot create media decoder " + codecName);
       return VideoCodecStatus.FALLBACK_SOFTWARE;
@@ -306,7 +304,7 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
     Logging.d(TAG, "release");
     VideoCodecStatus status = releaseInternal();
     if (surface != null) {
-      releaseSurface();
+      surface.release();
       surface = null;
       surfaceTextureHelper.stopListening();
       surfaceTextureHelper.dispose();
@@ -370,8 +368,7 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
     };
   }
 
-  // Visible for testing.
-  protected void deliverDecodedFrame() {
+  private void deliverDecodedFrame() {
     outputThreadChecker.checkIsOnValidThread();
     try {
       MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -423,7 +420,6 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
 
     synchronized (renderedTextureMetadataLock) {
       if (renderedTextureMetadata != null) {
-        codec.releaseOutputBuffer(index, false);
         return; // We are still waiting for texture for the previous frame, drop this one.
       }
       surfaceTextureHelper.setTextureSize(width, height);
@@ -531,16 +527,16 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
     final int vPos = uPos + uvStride * sliceHeight / 2;
     final int vEnd = vPos + uvStride * chromaHeight;
 
-    VideoFrame.I420Buffer frameBuffer = allocateI420Buffer(width, height);
+    VideoFrame.I420Buffer frameBuffer = JavaI420Buffer.allocate(width, height);
 
     buffer.limit(yEnd);
     buffer.position(yPos);
-    copyPlane(
+    YuvHelper.copyPlane(
         buffer.slice(), stride, frameBuffer.getDataY(), frameBuffer.getStrideY(), width, height);
 
     buffer.limit(uEnd);
     buffer.position(uPos);
-    copyPlane(buffer.slice(), uvStride, frameBuffer.getDataU(), frameBuffer.getStrideU(),
+    YuvHelper.copyPlane(buffer.slice(), uvStride, frameBuffer.getDataU(), frameBuffer.getStrideU(),
         chromaWidth, chromaHeight);
     if (sliceHeight % 2 == 1) {
       buffer.position(uPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
@@ -552,7 +548,7 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
 
     buffer.limit(vEnd);
     buffer.position(vPos);
-    copyPlane(buffer.slice(), uvStride, frameBuffer.getDataV(), frameBuffer.getStrideV(),
+    YuvHelper.copyPlane(buffer.slice(), uvStride, frameBuffer.getDataV(), frameBuffer.getStrideV(),
         chromaWidth, chromaHeight);
     if (sliceHeight % 2 == 1) {
       buffer.position(vPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
@@ -649,27 +645,5 @@ class HardwareVideoDecoder implements VideoDecoder, VideoSink {
       }
     }
     return false;
-  }
-
-  // Visible for testing.
-  protected SurfaceTextureHelper createSurfaceTextureHelper() {
-    return SurfaceTextureHelper.create("decoder-texture-thread", sharedContext);
-  }
-
-  // Visible for testing.
-  // TODO(sakal): Remove once Robolectric commit fa991a0 has been rolled to WebRTC.
-  protected void releaseSurface() {
-    surface.release();
-  }
-
-  // Visible for testing.
-  protected VideoFrame.I420Buffer allocateI420Buffer(int width, int height) {
-    return JavaI420Buffer.allocate(width, height);
-  }
-
-  // Visible for testing.
-  protected void copyPlane(
-      ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height) {
-    YuvHelper.copyPlane(src, srcStride, dst, dstStride, width, height);
   }
 }

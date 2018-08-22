@@ -15,13 +15,15 @@ package org.webrtc;
  * {@link VideoSource#getCapturerObserver}.
  *
  * All callbacks must be executed on a single thread.
+ *
+ * @note This will replace the deprecated VideoCapturer.CapturerObserver interface.
  */
-public interface CapturerObserver {
+public interface CapturerObserver extends VideoCapturer.CapturerObserver {
   /** Notify if the capturer have been started successfully or not. */
-  void onCapturerStarted(boolean success);
+  @Override void onCapturerStarted(boolean success);
   /** Notify that the capturer has been stopped. */
-  void onCapturerStopped();
+  @Override void onCapturerStopped();
 
   /** Delivers a captured frame. */
-  void onFrameCaptured(VideoFrame frame);
+  @Override void onFrameCaptured(VideoFrame frame);
 }

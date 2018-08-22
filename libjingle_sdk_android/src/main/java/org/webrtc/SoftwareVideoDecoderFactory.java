@@ -16,13 +16,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
-  @Deprecated
-  @Nullable
-  @Override
-  public VideoDecoder createDecoder(String codecType) {
-    return createDecoder(new VideoCodecInfo(codecType, new HashMap<>()));
-  }
-
   @Nullable
   @Override
   public VideoDecoder createDecoder(VideoCodecInfo codecType) {
