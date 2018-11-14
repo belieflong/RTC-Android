@@ -26,16 +26,18 @@ public interface VideoEncoder {
     public final int height;
     public final int startBitrate; // Kilobits per second.
     public final int maxFramerate;
+    public final int numberOfSimulcastStreams;
     public final boolean automaticResizeOn;
 
     @CalledByNative("Settings")
     public Settings(int numberOfCores, int width, int height, int startBitrate, int maxFramerate,
-        boolean automaticResizeOn) {
+        int numberOfSimulcastStreams, boolean automaticResizeOn) {
       this.numberOfCores = numberOfCores;
       this.width = width;
       this.height = height;
       this.startBitrate = startBitrate;
       this.maxFramerate = maxFramerate;
+      this.numberOfSimulcastStreams = numberOfSimulcastStreams;
       this.automaticResizeOn = automaticResizeOn;
     }
   }
@@ -214,7 +216,12 @@ public interface VideoEncoder {
    * @param packetLoss How many packets are lost on average per 255 packets.
    * @param roundTripTimeMs Round-trip time of the network in milliseconds.
    */
-  @CalledByNative VideoCodecStatus setChannelParameters(short packetLoss, long roundTripTimeMs);
+  // TODO(webrtc:9946): Remove this function when downstream projects have been
+  //                    updated.
+  @Deprecated
+  default VideoCodecStatus setChannelParameters(short packetLoss, long roundTripTimeMs) {
+    return VideoCodecStatus.OK;
+  }
 
   /** Sets the bitrate allocation and the target framerate for the encoder. */
   @CalledByNative VideoCodecStatus setRateAllocation(BitrateAllocation allocation, int framerate);

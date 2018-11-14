@@ -385,6 +385,7 @@ public class PeerConnection {
     public IceTransportsType iceTransportsType;
     public List<IceServer> iceServers;
     public BundlePolicy bundlePolicy;
+    @Nullable public RtcCertificatePem certificate;
     public RtcpMuxPolicy rtcpMuxPolicy;
     public TcpCandidatePolicy tcpCandidatePolicy;
     public CandidateNetworkPolicy candidateNetworkPolicy;
@@ -461,6 +462,25 @@ public class PeerConnection {
     // every offer/answer negotiation.This is only intended to be a workaround for crbug.com/835958
     public boolean activeResetSrtpParams;
 
+    /*
+     * Experimental flag that enables a use of media transport. If this is true, the media transport
+     * factory MUST be provided to the PeerConnectionFactory.
+     */
+    public boolean useMediaTransport;
+
+    /*
+     * Experimental flag that enables a use of media transport for data channels. If this is true,
+     * the media transport factory MUST be provided to the PeerConnectionFactory.
+     */
+    public boolean useMediaTransportForDataChannels;
+
+    /**
+     * Defines advanced optional cryptographic settings related to SRTP and
+     * frame encryption for native WebRTC. Setting this will overwrite any
+     * options set through the PeerConnectionFactory (which is deprecated).
+     */
+    @Nullable public CryptoOptions cryptoOptions;
+
     // TODO(deadbeef): Instead of duplicating the defaults here, we should do
     // something to pick up the defaults from C++. The Objective-C equivalent
     // of RTCConfiguration does that.
@@ -500,6 +520,9 @@ public class PeerConnection {
       networkPreference = AdapterType.UNKNOWN;
       sdpSemantics = SdpSemantics.PLAN_B;
       activeResetSrtpParams = false;
+      useMediaTransport = false;
+      useMediaTransportForDataChannels = false;
+      cryptoOptions = null;
     }
 
     @CalledByNative("RTCConfiguration")
@@ -515,6 +538,12 @@ public class PeerConnection {
     @CalledByNative("RTCConfiguration")
     BundlePolicy getBundlePolicy() {
       return bundlePolicy;
+    }
+
+    @Nullable
+    @CalledByNative("RTCConfiguration")
+    RtcCertificatePem getCertificate() {
+      return certificate;
     }
 
     @CalledByNative("RTCConfiguration")
@@ -692,6 +721,22 @@ public class PeerConnection {
     boolean getActiveResetSrtpParams() {
       return activeResetSrtpParams;
     }
+
+    @CalledByNative("RTCConfiguration")
+    boolean getUseMediaTransport() {
+      return useMediaTransport;
+    }
+
+    @CalledByNative("RTCConfiguration")
+    boolean getUseMediaTransportForDataChannels() {
+      return useMediaTransportForDataChannels;
+    }
+
+    @Nullable
+    @CalledByNative("RTCConfiguration")
+    CryptoOptions getCryptoOptions() {
+      return cryptoOptions;
+    }
   };
 
   private final List<MediaStream> localStreams = new ArrayList<>();
@@ -719,6 +764,10 @@ public class PeerConnection {
 
   public SessionDescription getRemoteDescription() {
     return nativeGetRemoteDescription();
+  }
+
+  public RtcCertificatePem getCertificate() {
+    return nativeGetCertificate();
   }
 
   public DataChannel createDataChannel(String label, DataChannel.Init init) {
@@ -781,7 +830,7 @@ public class PeerConnection {
    * use addTrack instead.
    */
   public boolean addStream(MediaStream stream) {
-    boolean ret = nativeAddLocalStream(stream.nativeStream);
+    boolean ret = nativeAddLocalStream(stream.getNativeMediaStream());
     if (!ret) {
       return false;
     }
@@ -795,7 +844,7 @@ public class PeerConnection {
    * removeTrack instead.
    */
   public void removeStream(MediaStream stream) {
-    nativeRemoveLocalStream(stream.nativeStream);
+    nativeRemoveLocalStream(stream.getNativeMediaStream());
     localStreams.remove(stream);
   }
 
@@ -905,7 +954,7 @@ public class PeerConnection {
     if (track == null || streamIds == null) {
       throw new NullPointerException("No MediaStreamTrack specified in addTrack.");
     }
-    RtpSender newSender = nativeAddTrack(track.nativeTrack, streamIds);
+    RtpSender newSender = nativeAddTrack(track.getNativeMediaStreamTrack(), streamIds);
     if (newSender == null) {
       throw new IllegalStateException("C++ addTrack failed.");
     }
@@ -922,7 +971,7 @@ public class PeerConnection {
     if (sender == null) {
       throw new NullPointerException("No RtpSender specified for removeTrack.");
     }
-    return nativeRemoveTrack(sender.nativeRtpSender);
+    return nativeRemoveTrack(sender.getNativeRtpSender());
   }
 
   /**
@@ -962,7 +1011,8 @@ public class PeerConnection {
     if (init == null) {
       init = new RtpTransceiver.RtpTransceiverInit();
     }
-    RtpTransceiver newTransceiver = nativeAddTransceiverWithTrack(track.nativeTrack, init);
+    RtpTransceiver newTransceiver =
+        nativeAddTransceiverWithTrack(track.getNativeMediaStreamTrack(), init);
     if (newTransceiver == null) {
       throw new IllegalStateException("C++ addTransceiver failed.");
     }
@@ -993,7 +1043,7 @@ public class PeerConnection {
   // Older, non-standard implementation of getStats.
   @Deprecated
   public boolean getStats(StatsObserver observer, @Nullable MediaStreamTrack track) {
-    return nativeOldGetStats(observer, (track == null) ? 0 : track.nativeTrack);
+    return nativeOldGetStats(observer, (track == null) ? 0 : track.getNativeMediaStreamTrack());
   }
 
   /**
@@ -1070,7 +1120,7 @@ public class PeerConnection {
   public void dispose() {
     close();
     for (MediaStream stream : localStreams) {
-      nativeRemoveLocalStream(stream.nativeStream);
+      nativeRemoveLocalStream(stream.getNativeMediaStream());
       stream.dispose();
     }
     localStreams.clear();
@@ -1106,6 +1156,7 @@ public class PeerConnection {
   private native long nativeGetNativePeerConnection();
   private native SessionDescription nativeGetLocalDescription();
   private native SessionDescription nativeGetRemoteDescription();
+  private native RtcCertificatePem nativeGetCertificate();
   private native DataChannel nativeCreateDataChannel(String label, DataChannel.Init init);
   private native void nativeCreateOffer(SdpObserver observer, MediaConstraints constraints);
   private native void nativeCreateAnswer(SdpObserver observer, MediaConstraints constraints);
