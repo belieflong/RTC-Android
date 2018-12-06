@@ -14,6 +14,7 @@ import android.content.Context;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.webrtc.Logging.Severity;
+import org.webrtc.PeerConnection;
 import org.webrtc.audio.AudioDeviceModule;
 import org.webrtc.audio.LegacyAudioDeviceModule;
 
@@ -123,29 +124,6 @@ public class PeerConnectionFactory {
     public boolean disableEncryption;
     public boolean disableNetworkMonitor;
 
-    // TODO(webrtc:9891) - The below crypto options are deprecated. Please use
-    // RTCConfiguration to set these options instead. They will be removed in
-    // a future release.
-    /**
-     * If set to true, the (potentially insecure) crypto cipher SRTP_AES128_CM_SHA1_32
-     * will be included in the list of supported ciphers during negotiation. It will only
-     * be used if both peers support it and no other ciphers get preferred.
-     */
-    public boolean enableAes128Sha1_32CryptoCipher;
-
-    /**
-     * Enable GCM crypto suites from RFC 7714 for SRTP. GCM will only be used if both sides enable
-     * it.
-     */
-    public boolean enableGcmCryptoSuites;
-
-    /**
-     * If set all RtpSenders must have an FrameEncryptor attached to them before they are allowed to
-     * send packets. All RtpReceivers must have a FrameDecryptor attached to them before they are
-     * able to receive packets.
-     */
-    public boolean requireFrameEncryption;
-
     @CalledByNative("Options")
     int getNetworkIgnoreMask() {
       return networkIgnoreMask;
@@ -159,24 +137,6 @@ public class PeerConnectionFactory {
     @CalledByNative("Options")
     boolean getDisableNetworkMonitor() {
       return disableNetworkMonitor;
-    }
-
-    @Deprecated
-    @CalledByNative("Options")
-    boolean getEnableAes128Sha1_32CryptoCipher() {
-      return enableAes128Sha1_32CryptoCipher;
-    }
-
-    @Deprecated
-    @CalledByNative("Options")
-    boolean getEnableGcmCryptoSuites() {
-      return enableGcmCryptoSuites;
-    }
-
-    @Deprecated
-    @CalledByNative("Options")
-    boolean getRequireFrameEncryption() {
-      return requireFrameEncryption;
     }
   }
 
@@ -440,9 +400,25 @@ public class PeerConnectionFactory {
     return new MediaStream(nativeCreateLocalMediaStream(nativeFactory, label));
   }
 
-  public VideoSource createVideoSource(boolean isScreencast) {
+  /**
+   * Create video source with given parameters. If alignTimestamps is false, the caller is
+   * responsible for aligning the frame timestamps to rtc::TimeNanos(). This can be used to achieve
+   * higher accuracy if there is a big delay between frame creation and frames being delivered to
+   * the returned video source. If alignTimestamps is true, timestamps will be aligned to
+   * rtc::TimeNanos() when they arrive to the returned video source.
+   */
+  public VideoSource createVideoSource(boolean isScreencast, boolean alignTimestamps) {
     checkPeerConnectionFactoryExists();
-    return new VideoSource(nativeCreateVideoSource(nativeFactory, isScreencast));
+    return new VideoSource(nativeCreateVideoSource(nativeFactory, isScreencast, alignTimestamps));
+  }
+
+  /**
+   * Same as above with alignTimestamps set to true.
+   *
+   * @see #createVideoSource(boolean, boolean)
+   */
+  public VideoSource createVideoSource(boolean isScreencast) {
+    return createVideoSource(isScreencast, /* alignTimestamps= */ true);
   }
 
   public VideoTrack createVideoTrack(String id, VideoSource source) {
@@ -514,9 +490,9 @@ public class PeerConnectionFactory {
     if (thread != null) {
       StackTraceElement[] stackTraces = thread.getStackTrace();
       if (stackTraces.length > 0) {
-        Logging.d(TAG, threadName + " stacks trace:");
+        Logging.w(TAG, threadName + " stacks trace:");
         for (StackTraceElement stackTrace : stackTraces) {
-          Logging.d(TAG, stackTrace.toString());
+          Logging.w(TAG, stackTrace.toString());
         }
       }
     }
@@ -567,7 +543,8 @@ public class PeerConnectionFactory {
       PeerConnection.RTCConfiguration rtcConfig, MediaConstraints constraints, long nativeObserver,
       SSLCertificateVerifier sslCertificateVerifier);
   private static native long nativeCreateLocalMediaStream(long factory, String label);
-  private static native long nativeCreateVideoSource(long factory, boolean is_screencast);
+  private static native long nativeCreateVideoSource(
+      long factory, boolean is_screencast, boolean alignTimestamps);
   private static native long nativeCreateVideoTrack(
       long factory, String id, long nativeVideoSource);
   private static native long nativeCreateAudioSource(long factory, MediaConstraints constraints);
