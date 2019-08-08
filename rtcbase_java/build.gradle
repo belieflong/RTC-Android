@@ -19,7 +19,7 @@ android {
 }
 
 dependencies {
-    //implementation "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
-    implementation "com.android.support:support-annotations:${rootProject.ext.androidSupportSdkVersion}"
+    api "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
+    //implementation "com.android.support:support-annotations:${rootProject.ext.androidSupportSdkVersion}"
     api 'com.google.code.findbugs:jsr305:3.0.2'
 }

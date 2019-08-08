@@ -12,6 +12,7 @@ package org.webrtc;
 
 import android.support.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.webrtc.DataChannel;
@@ -96,6 +97,10 @@ public class PeerConnection {
 
     /** Triggered when the IceConnectionState changes. */
     @CalledByNative("Observer") void onIceConnectionChange(IceConnectionState newState);
+
+    /* Triggered when the standard-compliant state transition of IceConnectionState happens. */
+    @CalledByNative("Observer")
+    default void onStandardizedIceConnectionChange(IceConnectionState newState) {}
 
     /** Triggered when the PeerConnectionState changes. */
     @CalledByNative("Observer")
@@ -220,6 +225,31 @@ public class PeerConnection {
     public String toString() {
       return urls + " [" + username + ":" + password + "] [" + tlsCertPolicy + "] [" + hostname
           + "] [" + tlsAlpnProtocols + "] [" + tlsEllipticCurves + "]";
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+      if (obj == null) {
+        return false;
+      }
+      if (obj == this) {
+        return true;
+      }
+      if (!(obj instanceof IceServer)) {
+        return false;
+      }
+      IceServer other = (IceServer) obj;
+      return (uri.equals(other.uri) && urls.equals(other.urls) && username.equals(other.username)
+          && password.equals(other.password) && tlsCertPolicy.equals(other.tlsCertPolicy)
+          && hostname.equals(other.hostname) && tlsAlpnProtocols.equals(other.tlsAlpnProtocols)
+          && tlsEllipticCurves.equals(other.tlsEllipticCurves));
+    }
+
+    @Override
+    public int hashCode() {
+      Object[] values = {uri, urls, username, password, tlsCertPolicy, hostname, tlsAlpnProtocols,
+          tlsEllipticCurves};
+      return Arrays.hashCode(values);
     }
 
     public static Builder builder(String uri) {
@@ -420,6 +450,7 @@ public class PeerConnection {
     public int iceCandidatePoolSize;
     public boolean pruneTurnPorts;
     public boolean presumeWritableWhenFullyRelayed;
+    public boolean surfaceIceCandidatesOnIceTransportTypeChanged;
     // The following fields define intervals in milliseconds at which ICE
     // connectivity checks are sent.
     //
@@ -522,6 +553,7 @@ public class PeerConnection {
       iceCandidatePoolSize = 0;
       pruneTurnPorts = false;
       presumeWritableWhenFullyRelayed = false;
+      surfaceIceCandidatesOnIceTransportTypeChanged = false;
       iceCheckIntervalStrongConnectivityMs = null;
       iceCheckIntervalWeakConnectivityMs = null;
       iceCheckMinInterval = null;
@@ -626,6 +658,11 @@ public class PeerConnection {
     @CalledByNative("RTCConfiguration")
     boolean getPresumeWritableWhenFullyRelayed() {
       return presumeWritableWhenFullyRelayed;
+    }
+
+    @CalledByNative("RTCConfiguration")
+    boolean getSurfaceIceCandidatesOnIceTransportTypeChanged() {
+      return surfaceIceCandidatesOnIceTransportTypeChanged;
     }
 
     @Nullable
