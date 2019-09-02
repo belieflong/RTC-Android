@@ -32,6 +32,6 @@ dependencies {
     implementation "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
 
     implementation (name:'autobanh', ext:'jar')
-    implementation project(':libjingle_sdk_android')
+    implementation project(':libwebrtc')
 
 }
