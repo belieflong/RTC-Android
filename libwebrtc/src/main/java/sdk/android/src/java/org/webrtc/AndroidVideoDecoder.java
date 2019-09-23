@@ -16,6 +16,7 @@ import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaFormat;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Surface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -134,7 +135,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
     if (!isSupportedColorFormat(colorFormat)) {
       throw new IllegalArgumentException("Unsupported color format: " + colorFormat);
     }
-    Logging.d(TAG,
+    Log.e(TAG,
         "ctor name: " + codecName + " type: " + codecType + " color format: " + colorFormat
             + " context: " + sharedContext);
     this.mediaCodecWrapperFactory = mediaCodecWrapperFactory;
@@ -161,7 +162,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
   // Internal variant is used when restarting the codec due to reconfiguration.
   private VideoCodecStatus initDecodeInternal(int width, int height) {
     decoderThreadChecker.checkIsOnValidThread();
-    Logging.d(TAG,
+    Log.e(TAG,
         "initDecodeInternal name: " + codecName + " type: " + codecType + " width: " + width
             + " height: " + height);
     if (outputThread != null) {
@@ -201,7 +202,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
     outputThread = createOutputThread();
     outputThread.start();
 
-    Logging.d(TAG, "initDecodeInternal done");
+    Log.e(TAG, "initDecodeInternal done");
     return VideoCodecStatus.OK;
   }
 

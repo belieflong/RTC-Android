@@ -16,7 +16,10 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.os.Build;
 import android.support.annotation.Nullable;
+
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Container class for static constants and helpers used with MediaCodec. */
@@ -30,7 +33,12 @@ class MediaCodecUtils {
   static final String INTEL_PREFIX = "OMX.Intel.";
   static final String NVIDIA_PREFIX = "OMX.Nvidia.";
   static final String QCOM_PREFIX = "OMX.qcom.";
-  static final String[] SOFTWARE_IMPLEMENTATION_PREFIXES = {"OMX.google.", "OMX.SEC."};
+  //static final String HISI_PREFIX = "OMX.hisi.";
+  //static final String MTK_PREFIX = "OMX.MTK.";
+  static final String[] SOFTWARE_IMPLEMENTATION_PREFIXES = {/*"OMX.google.", */"OMX.SEC."};
+  static final boolean CREATE_ENCODE_BY_TYPE = true;
+  static final List<String> HW_EGL_TEXTURE_EXCEPTION_MODELS =
+          Arrays.asList("GN5001");
 
   // NV12 color format supported by QCOM codec, but not declared in MediaCodec -
   // see /hardware/qcom/media/mm-core/inc/OMX_QCOMExtns.h

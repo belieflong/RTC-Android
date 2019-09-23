@@ -18,6 +18,7 @@ import android.media.MediaFormat;
 import android.opengl.GLES20;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Surface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -169,9 +170,10 @@ class HardwareVideoEncoder implements VideoEncoder {
     }
     adjustedBitrate = bitrateAdjuster.getAdjustedBitrateBps();
 
-    Logging.d(TAG,
-        "initEncode: " + width + " x " + height + ". @ " + settings.startBitrate
-            + "kbps. Fps: " + settings.maxFramerate + " Use surface mode: " + useSurfaceMode);
+    Log.d(TAG,
+        "lyl initEncode: " + width + " x " + height + ". @ " + settings.startBitrate
+            + "kbps. Fps: " + settings.maxFramerate + " Use surface mode: " + useSurfaceMode
+                + ". codecType: " + codecType.mimeType() + ". adjustedBitrate: " + adjustedBitrate);
     return initEncodeInternal();
   }
 
