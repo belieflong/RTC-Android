@@ -31,7 +31,7 @@ ext {
     minSdkVersion = 16
     androidCompileSdkVersion = 28
     androidBuildToolsVersion = '28.0.3'
-    targetSdkVersion = 22
+    targetSdkVersion = 23
     androidSupportSdkVersion = '28.0.0'
 
     releaseVersionCode = 1
