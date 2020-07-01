@@ -24,7 +24,7 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
     }
     if (info.name.equalsIgnoreCase("H264") && LibswH264Encoder.nativeIsSupported()) {
       return new LibswH264Encoder();
-    }
+    }    
     if (info.name.equalsIgnoreCase("VP9") && LibvpxVp9Encoder.nativeIsSupported()) {
       return new LibvpxVp9Encoder();
     }

@@ -50,7 +50,6 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
     this((MediaCodecUtils.HW_EGL_TEXTURE_EXCEPTION_MODELS.contains(Build.MODEL)
                     || Build.VERSION.SDK_INT < Build.VERSION_CODES.M ) ? null : sharedContext,
             /* codecAllowedPredicate= */ null);
-    //this(sharedContext, /* codecAllowedPredicate= */ null);
   }
 
   /**

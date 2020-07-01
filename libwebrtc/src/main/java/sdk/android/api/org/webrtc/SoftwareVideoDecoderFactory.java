@@ -31,7 +31,7 @@ public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
     }
     if (codecType.getName().equalsIgnoreCase("H264") && LibswH264Decoder.nativeIsSupported()) {
       return new LibswH264Decoder();
-    }
+    }    
     if (codecType.getName().equalsIgnoreCase("VP9") && LibvpxVp9Decoder.nativeIsSupported()) {
       return new LibvpxVp9Decoder();
     }

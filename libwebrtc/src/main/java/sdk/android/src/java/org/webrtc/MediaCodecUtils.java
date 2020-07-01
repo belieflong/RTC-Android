@@ -16,11 +16,10 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.os.Build;
 import android.support.annotation.Nullable;
-
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 
 /** Container class for static constants and helpers used with MediaCodec. */
 // We are forced to use the old API because we want to support API level < 21.
@@ -33,8 +32,6 @@ class MediaCodecUtils {
   static final String INTEL_PREFIX = "OMX.Intel.";
   static final String NVIDIA_PREFIX = "OMX.Nvidia.";
   static final String QCOM_PREFIX = "OMX.qcom.";
-  //static final String HISI_PREFIX = "OMX.hisi.";
-  //static final String MTK_PREFIX = "OMX.MTK.";
   static final String[] SOFTWARE_IMPLEMENTATION_PREFIXES = {/*"OMX.google.", */"OMX.SEC."};
   static final boolean CREATE_ENCODE_BY_TYPE = true;
   static final List<String> HW_EGL_TEXTURE_EXCEPTION_MODELS =
